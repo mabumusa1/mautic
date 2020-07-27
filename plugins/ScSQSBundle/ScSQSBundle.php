@@ -12,7 +12,20 @@
 namespace MauticPlugin\ScSQSBundle;
 
 use Mautic\PluginBundle\Bundle\PluginBundleBase;
+use MauticPlugin\ScSQSBundle\DependencyInjection\Compiler\SqsTransportPass;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+
 
 class ScSQSBundle extends PluginBundleBase
 {
+    /**
+    * {@inheritdoc}
+    */
+    public function build(ContainerBuilder $container)
+    {
+        parent::build($container);
+
+        $container->addCompilerPass(new SqsTransportPass());
+    }
+    
 }

@@ -1,19 +1,20 @@
 <?php
 
 /*
- * @copyright   2019 Mautic Contributors. All rights reserved
- * @author      Mautic
+ * @copyright   2020 SteerCampaign. All rights reserved
+ * @author      Mohammad Abu Musa<m.abumusa@gmail.com>
  *
- * @link        http://mautic.org
+ * @link        https://steercampaign.com
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-namespace Mautic\EmailBundle\Swiftmailer\Transport;
 
-use Mautic\EmailBundle\Swiftmailer\Spool\DelegatingSpool;
+namespace MauticPlugin\ScSQSBundle\Swiftmailer\Transport;
 
-class SpoolTransport extends \Swift_Transport_SpoolTransport
+use MauticPlugin\ScSQSBundle\Swiftmailer\Spool\DelegatingSpoolSqs;
+
+class SqsTransport extends \Swift_Transport_SpoolTransport
 {
     /**
      * @var \Swift_Events_EventDispatcher
@@ -21,14 +22,14 @@ class SpoolTransport extends \Swift_Transport_SpoolTransport
     private $eventDispatcher;
 
     /**
-     * @var DelegatingSpool
+     * @var DelegatingSpoolSqs
      */
     private $spool;
 
     /**
      * SpoolTransport constructor.
      */
-    public function __construct(\Swift_Events_EventDispatcher $eventDispatcher, DelegatingSpool $delegatingSpool)
+    public function __construct(\Swift_Events_EventDispatcher $eventDispatcher, DelegatingSpoolSqs $delegatingSpool)
     {
         $this->eventDispatcher = $eventDispatcher;
         $this->spool           = $delegatingSpool;
