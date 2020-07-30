@@ -90,7 +90,7 @@
 !/plugins/MauticSocialBundle
 !/plugins/MauticZapierBundle
 !/plugins/index.html
-!/plugins/ScSQSBundle
+!/plugins/SteercampaignSqsBundle
 
 /themes/*
 !/themes/aurora

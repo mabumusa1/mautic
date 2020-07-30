@@ -9,14 +9,14 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-namespace MauticPlugin\ScSQSBundle\Command;
+namespace MauticPlugin\SteercampaignSqsBundle\Command;
 
 use Mautic\CoreBundle\Command\ModeratedCommand;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-
+use Mautic\PluginBundle\Helper\IntegrationHelper;
 
 /**
  * CLI command to process the e-mail queue.
@@ -29,7 +29,7 @@ class ProcessSQSCommand extends ModeratedCommand
     protected function configure()
     {
         $this
-            ->setName('sc:sqs:send')
+            ->setName('steercampaign:sqs:send')
             ->setDescription('Processes SwiftMail\'s SQS')
             ->addOption('--message-limit', null, InputOption::VALUE_OPTIONAL, 'Limit number of messages sent at a time. Defaults to value set in config.')
             ->addOption('--time-limit', null, InputOption::VALUE_OPTIONAL, 'Limit the number of seconds per batch. Defaults to value set in config.')
@@ -58,7 +58,14 @@ EOT
         $skipClear  = $input->getOption('do-not-clear');
         $quiet      = $input->hasOption('quiet') ? $input->getOption('quiet') : false;
         $timeout    = $input->getOption('clear-timeout');
-        $queueMode  = $container->get('mautic.helper.core_parameters')->get('mailer_spool_type');
+     
+        $container = $this->getContainer();
+
+        /** @var \Mautic\CoreBundle\Factory\MauticFactory $factory */
+        $factory = $container->get('mautic.factory');
+        $integrationHelper = $factory->getHelper('integration');
+        $integrationObject = $integrationHelper->getIntegrationObject('Sqs');
+        $queueMode  = $integrationObject->getIntegrationSettings()->isPublished();
 
         if ('sqs' != $queueMode) {
             $output->writeln('Mautic is not set to SQS email.');

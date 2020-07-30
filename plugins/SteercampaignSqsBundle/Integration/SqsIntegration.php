@@ -9,7 +9,7 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-namespace MauticPlugin\ScSQSBundle\Integration;
+namespace MauticPlugin\SteercampaignSqsBundle\Integration;
 
 
 use Mautic\PluginBundle\Integration\AbstractIntegration;
@@ -37,7 +37,12 @@ class SqsIntegration extends AbstractIntegration
     public function getDisplayName()
     {
         return 'Amazon SQS';
-    }    
+    }
+    
+    public function getDescription()
+    {
+        return 'Make SQS the default Spool Engine for queining emails';
+    }
 
 
     /**
@@ -116,7 +121,7 @@ class SqsIntegration extends AbstractIntegration
                 [
                     'label'    => 'mautic.integration.SQS.url',
                     'attr'     => ['class'   => 'form-control'],
-                    'data'     => $data['url'],
+                    'data'     => empty($data['url']) ? '' : $data['url'],
                     'required' => true,
                     'constraints' => [
                         new Url(),
@@ -208,7 +213,7 @@ class SqsIntegration extends AbstractIntegration
                     'attr'  => [
                         'class'   => 'btn btn-primary',
                         'style'   => 'margin-bottom: 10px',
-                        'onclick' => 'Mautic.testFullContactApi(this)',
+                        'onclick' => 'Mautic.testSqsApi(this)',
                     ],
                 ]
             );
@@ -242,7 +247,7 @@ class SqsIntegration extends AbstractIntegration
     {        
         if ('custom' === $section) {
             return [
-                'template'   => 'ScSQSBundle:Integration:form.html.php',
+                'template'   => 'SteercampaignSqsBundle:Integration:form.html.php',
                 'parameters' => [
                 ],
             ];

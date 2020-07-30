@@ -8,44 +8,35 @@
  *
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
-
- return [
+return [
     'name'        => 'AWS SQS Integration',
     'description' => 'Make SQS the default Spool Engine for queining emails',
     'version'     => '1.0',
     'author'      => 'Mohammad Abu Musa <m.abumusa@gmail.com>',
     'description' => 'Saves all the emails that are queued for sending on SQS instead of saving them on the filesystem',
-
-    'routes' => [
-        'main' => [
-            'sqs' => [
-                'path'       => '/sqs/test',
-                'controller' => 'ScSQSBundle:Sqs:test',
-                'method'     => 'GET'
-            ],
-        ],
-    ],
-
     'services' => [
         'others' => [
-            'mautic.spool.delegatorSqs' => [
-                'class'     => MauticPlugin\ScSQSBundle\Swiftmailer\Spool\DelegatingSpoolSqs::class,
+            'steercampaign.swiftmailer_sqs.delegator' => [
+                'class'     => MauticPlugin\SteercampaignSqsBundle\Swiftmailer\Spool\DelegatingSpoolSqs::class,
                 'arguments' => [
-                    'mautic.helper.core_parameters',
-                    'swiftmailer.transport.real'                
+                    'mautic.helper.integration',
+                    'monolog.logger.mautic',
+                    'swiftmailer.transport.real'
                 ],
-            ],
-            'mautic.transport.sqs' => [
-                'class' => MauticPlugin\ScSQSBundle\Swiftmailer\Transport\SqsTransport::class,
+                'serviceAlias' => 'mautic.spool.delegator'                
+            ],            
+            'steercampaign.swiftmailer_sqs.spool' => [
+                'class'     => MauticPlugin\SteercampaignSqsBundle\Swiftmailer\Transport\SqsTransport::class,
                 'arguments' => [
                     'swiftmailer.mailer.default.transport.eventdispatcher',
-                    'mautic.spool.delegatorSqs',                     
+                    'steercampaign.swiftmailer_sqs.delegator',
                 ],
+                'serviceAlias' => 'mautic.transport.spool'
             ]
-        ],
+        ],        
         'integrations' => [
             'mautic.integration.sqs' => [
-                'class'     => MauticPlugin\ScSQSBundle\Integration\SqsIntegration::class,
+                'class'     => \MauticPlugin\SteercampaignSqsBundle\Integration\SqsIntegration::class,
                 'arguments' => [
                     'event_dispatcher',
                     'mautic.helper.cache_storage',
@@ -66,5 +57,5 @@
                 ],
             ]
         ]    
-    ],
+    ]
 ];

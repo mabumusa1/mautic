@@ -9,14 +9,16 @@
  * @license     GNU/GPLv3 http://www.gnu.org/licenses/gpl-3.0.html
  */
 
-namespace MauticPlugin\ScSQSBundle\Swiftmailer\Spool;
+namespace MauticPlugin\SteercampaignSqsBundle\Swiftmailer\Spool;
 
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Swiftmailer\Transport\TokenTransportInterface;
 use Swift_Mime_SimpleMessage;
 use Aws\Sqs\SqsClient;
 use AwsAwsException\AwsException;
 use Psr\Log\LoggerInterface;
+use Mautic\PluginBundle\Helper\IntegrationHelper;
+use MauticPlugin\SteercampaignSqsBundle\Integration\SqsIntegration;
+use Monolog\Logger;
 
 /**
  * Class DelegatingSpoolSqs
@@ -34,10 +36,6 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
      */
     private $realTransport;
 
-    /**
-     * @var CoreParametersHelper
-     */
-    private $coreParametersHelper;
 
     /**
      * @var bool
@@ -47,17 +45,35 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
     /**
      * @var integer The minimum number of messages that may be fetched at one time
      */
-    const MIN_NUMBER_MESSAGES = 1;
+    private $min_number_messages = 1;
+    
 
     /**
      * @var integer The maximum number of messages that may be fetched at one time
      */
-    const MAX_NUMBER_MESSAGES = 10;
+    private $max_number_messages = 1;
+    
 
     /**
      * @var int default value
      */
-    const DEFAULT_AWS_SQS_LONG_POLLING_TIMEOUT = 10; //in seconds
+    private $long_polling_timeout = 10; //in seconds
+    
+    /**
+     * @var int default value
+     */
+    private $size = 1000; //in bytes
+
+
+    /**
+     * @var bool|SqsIntegration
+     */
+    protected $integration;
+
+    /**
+     * @var Logger
+     */
+    protected $logger;
 
 
     /**
@@ -66,26 +82,51 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
     private $sqs;
 
     /**
+    * @var String
+    */
+    private $queueUrl;
+    
+    /**
      * Constructor.
      *
-     * @param CoreParametersHelper $coreParametersHelper
-     * @param AmazonSQS $sqs
+     * @param IntegrationHelper $integrationHelper
+     * @param Logger $logger
+     * @param Swift_Transport $realTransport
      *
      */
-    public function __construct(CoreParametersHelper $coreParametersHelper, \Swift_Transport $realTransport)
+    public function __construct(
+        IntegrationHelper $integrationHelper,
+        Logger $logger,
+        \Swift_Transport $realTransport
+    )
     {
-        $this->sqsSpoolEnabled     = 'sqs' === $coreParametersHelper->get('mailer_spool_type');
-        $this->coreParametersHelper = $coreParametersHelper;
+
+        $this->integration  = $integrationHelper->getIntegrationObject('Sqs');
+        $this->logger       = $logger;
+
+        $this->sqsSpoolEnabled     = $this->integration->getIntegrationSettings()->isPublished();
         $this->realTransport        = $realTransport;
 
-        $this->sqs = new SqsClient([
-            'region' => $coreParametersHelper->get('mailer_spool_sqs_region'),
-            'version' => '2012-11-05',
-            'credentials' => [
-                'key'    => $coreParametersHelper->get('mailer_spool_sqs_username'),
-                'secret' => $coreParametersHelper->get('mailer_spool_sqs_password'),
-            ],
-        ]);
+        $keys = $this->integration->getDecryptedApiKeys();
+        $this->queueUrl = $keys['url'];
+
+        try {
+            $this->sqs = new SqsClient([
+                'region' => $keys['region'],
+                'version' => '2012-11-05',
+                'credentials' => [
+                    'key'    => $keys['username'],
+                    'secret' => $keys['password'],
+                ],
+            ]);
+            
+            $this->min_number_messages = $keys['min_number_messages'];
+            $this->max_number_messages = $keys['max_number_messages'];
+            $this->long_polling_timeout = $keys['long_polling_timeout'];
+            $this->size = $keys['size'];
+        } catch (AwsException $e) {
+            $this->logger->error('Error Connecting to SQS: '.$exception->getMessage());
+        }
 
     }
     
@@ -115,7 +156,7 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
     public function delegateMessage(\Swift_Mime_SimpleMessage $message, &$failedRecipients = null): int
     {
         $this->messageSpooled = false;
-        // Write to filesystem if file spooling is enabled
+        // Write to sqs if file spooling is enabled
         if ($this->sqsSpoolEnabled) {
             return $this->queueMessage($message);
         }
@@ -135,13 +176,13 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
     {
         $messageBody = base64_encode(gzcompress(serialize($message)));
 
-        if (strlen($messageBody) > $this->coreParametersHelper->get('mailer_spool_sqs_max_message_size') * 1024) {
+        if (strlen($messageBody) > $this->size * 1024) {
             return false;
         }
 
         try {
             $response = $this->sqs->sendMessage([
-                'QueueUrl' => $this->coreParametersHelper->get('mailer_spool_sqs_url'),
+                'QueueUrl' => $this->queueUrl,
                 'MessageBody' => $messageBody
             ]);
             $this->messageSpooled = true;
@@ -184,20 +225,20 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
         $maxNumberOfMessages = max(
             min(
                 $this->getMessageLimit(),
-                static::MAX_NUMBER_MESSAGES
+                $this->max_number_messages
             ),
-            static::MIN_NUMBER_MESSAGES
+            $this->min_number_messages
         );
 
         $options = [
             'MaxNumberOfMessages' => $maxNumberOfMessages,
-            'WaitTimeSeconds' => static::DEFAULT_AWS_SQS_LONG_POLLING_TIMEOUT
+            'WaitTimeSeconds' => $this->long_polling_timeout
         ];
 
         while (true) {
             try {
                 $response = $this->sqs->receiveMessage([
-                        'QueueUrl' => $this->coreParametersHelper->get('mailer_spool_sqs_url'),
+                        'QueueUrl' => $this->queueUrl,
                     ] + $options);
             } catch (AwsException $e) {
                 return $count;
@@ -247,7 +288,7 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
     {
         try {
             $response = $this->sqs->deleteMessage([
-                'QueueUrl' => $this->coreParametersHelper->get('mailer_spool_sqs_url'),
+                'QueueUrl' => $this->queueUrl,
                 'ReceiptHandle' => $receiptHandle
             ]);
         } catch (AwsException $e) {

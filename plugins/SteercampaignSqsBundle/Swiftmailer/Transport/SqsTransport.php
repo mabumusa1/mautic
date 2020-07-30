@@ -10,9 +10,9 @@
  */
 
 
-namespace MauticPlugin\ScSQSBundle\Swiftmailer\Transport;
+namespace MauticPlugin\SteercampaignSqsBundle\Swiftmailer\Transport;
 
-use MauticPlugin\ScSQSBundle\Swiftmailer\Spool\DelegatingSpoolSqs;
+use MauticPlugin\SteercampaignSqsBundle\Swiftmailer\Spool\DelegatingSpoolSqs;
 
 class SqsTransport extends \Swift_Transport_SpoolTransport
 {
