@@ -11,18 +11,16 @@
 
 namespace MauticPlugin\SteercampaignSqsBundle\Integration;
 
-
 use Mautic\PluginBundle\Integration\AbstractIntegration;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\ButtonType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
-use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
-use Symfony\Component\Validator\Constraints\Url;
-use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\FormBuilder;
-use Symfony\Component\Form\Extension\Core\Type\ButtonType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-
+use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Url;
 
 class SqsIntegration extends AbstractIntegration
 {
@@ -30,7 +28,7 @@ class SqsIntegration extends AbstractIntegration
     {
         return 'Sqs';
     }
-    
+
     /**
      * {@inheritdoc}
      */
@@ -38,12 +36,11 @@ class SqsIntegration extends AbstractIntegration
     {
         return 'Amazon SQS';
     }
-    
+
     public function getDescription()
     {
         return 'Make SQS the default Spool Engine for queining emails';
     }
-
 
     /**
      * Return's authentication method such as oauth2, oauth1a, key, etc.
@@ -54,7 +51,6 @@ class SqsIntegration extends AbstractIntegration
     {
         return 'api';
     }
-
 
     /**
      * Get the array key for clientId.
@@ -76,7 +72,6 @@ class SqsIntegration extends AbstractIntegration
         return 'password';
     }
 
-
     /**
      * Get the array key for queue url.
      *
@@ -86,7 +81,7 @@ class SqsIntegration extends AbstractIntegration
     {
         return 'url';
     }
-    
+
     /**
      * Get the array key for region url.
      *
@@ -104,9 +99,10 @@ class SqsIntegration extends AbstractIntegration
     {
         return [
             'username'     => 'mautic.integration.keyfield.username',
-            'password' => 'mautic.integration.keyfield.password',            
+            'password'     => 'mautic.integration.keyfield.password',
         ];
     }
+
     /**
      * @param Form|FormBuilder $builder
      * @param array            $data
@@ -119,15 +115,15 @@ class SqsIntegration extends AbstractIntegration
                 'url',
                 TextType::class,
                 [
-                    'label'    => 'mautic.integration.SQS.url',
-                    'attr'     => ['class'   => 'form-control'],
-                    'data'     => empty($data['url']) ? '' : $data['url'],
-                    'required' => true,
+                    'label'       => 'mautic.integration.SQS.url',
+                    'attr'        => ['class'   => 'form-control'],
+                    'data'        => empty($data['url']) ? '' : $data['url'],
+                    'required'    => true,
                     'constraints' => [
                         new Url(),
-                        New NotBlank()
-                    ]
-                ]               
+                        new NotBlank(),
+                    ],
+                ]
             );
             $builder->add(
                 'region',
@@ -144,14 +140,14 @@ class SqsIntegration extends AbstractIntegration
                 'size',
                 NumberType::class,
                 [
-                    'label'    => 'mautic.integration.SQS.size',
-                    'attr'     => ['class'   => 'form-control'],
-                    'data'     => empty($data['size']) ? 50 : $data['size'],
-                    'required' => false,
+                    'label'         => 'mautic.integration.SQS.size',
+                    'attr'          => ['class'   => 'form-control'],
+                    'data'          => empty($data['size']) ? 50 : $data['size'],
+                    'required'      => false,
                     'constraints'   => [
                         new GreaterThanOrEqual([
-                            'value' => 1
-                        ])
+                            'value' => 1,
+                        ]),
                     ],
                 ]
             );
@@ -160,33 +156,31 @@ class SqsIntegration extends AbstractIntegration
                 'min_number_messages',
                 NumberType::class,
                 [
-                    'label'    => 'mautic.integration.SQS.max_number_messages',
-                    'attr'     => ['class'   => 'form-control'],
-                    'data'     => empty($data['min_number_messages']) ? 1 : $data['min_number_messages'],
-                    'required' => false,
+                    'label'         => 'mautic.integration.SQS.max_number_messages',
+                    'attr'          => ['class'   => 'form-control'],
+                    'data'          => empty($data['min_number_messages']) ? 1 : $data['min_number_messages'],
+                    'required'      => false,
                     'constraints'   => [
                         new GreaterThanOrEqual([
-                            'value' => 1
-                        ])
+                            'value' => 1,
+                        ]),
                     ],
-
                 ]
             );
-        
+
             $builder->add(
                 'max_number_messages',
                 NumberType::class,
                 [
-                   'label'    => 'mautic.integration.SQS.max_number_messages',
-                    'attr'     => ['class'   => 'form-control'],
-                    'data'     => empty($data['max_number_messages']) ? 10 : $data['max_number_messages'],
-                    'required' => false,
+                   'label'          => 'mautic.integration.SQS.max_number_messages',
+                    'attr'          => ['class'   => 'form-control'],
+                    'data'          => empty($data['max_number_messages']) ? 10 : $data['max_number_messages'],
+                    'required'      => false,
                     'constraints'   => [
                         new GreaterThanOrEqual([
-                            'value' => 1
-                        ])
+                            'value' => 1,
+                        ]),
                     ],
-
                 ]
             );
 
@@ -194,14 +188,14 @@ class SqsIntegration extends AbstractIntegration
                 'long_polling_timeout',
                 NumberType::class,
                 [
-                    'label'    => 'mautic.integration.SQS.long_polling_timeout',
-                    'attr'     => ['class'   => 'form-control'],
-                    'data'     => empty($data['long_polling_timeout']) ? 10 : $data['long_polling_timeout'],
-                    'required' => false,
+                    'label'         => 'mautic.integration.SQS.long_polling_timeout',
+                    'attr'          => ['class'   => 'form-control'],
+                    'data'          => empty($data['long_polling_timeout']) ? 10 : $data['long_polling_timeout'],
+                    'required'      => false,
                     'constraints'   => [
                         new GreaterThanOrEqual([
-                            'value' => 1
-                        ])
+                            'value' => 1,
+                        ]),
                     ],
                 ]
             );
@@ -231,9 +225,7 @@ class SqsIntegration extends AbstractIntegration
                     ],
                 ]
             );
-    
         }
-
     }
 
     /**
@@ -244,7 +236,7 @@ class SqsIntegration extends AbstractIntegration
      * @return string|array
      */
     public function getFormNotes($section)
-    {        
+    {
         if ('custom' === $section) {
             return [
                 'template'   => 'SteercampaignSqsBundle:Integration:form.html.php',
@@ -252,8 +244,7 @@ class SqsIntegration extends AbstractIntegration
                 ],
             ];
         }
+
         return parent::getFormNotes($section);
     }
-
 }
-

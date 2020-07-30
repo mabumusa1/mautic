@@ -11,14 +11,12 @@
 
 namespace MauticPlugin\SteercampaignSqsBundle\Controller;
 
-
+use Aws\Sqs\SqsClient;
+use AwsAwsException\AwsException;
 use Mautic\CoreBundle\Controller\AjaxController as CommonAjaxController;
 use Mautic\CoreBundle\Controller\AjaxLookupControllerTrait;
 use Mautic\CoreBundle\Helper\InputHelper;
 use Symfony\Component\HttpFoundation\Request;
-use Aws\Sqs\SqsClient;
-use AwsAwsException\AwsException;
-
 
 class AjaxController extends CommonAjaxController
 {
@@ -28,8 +26,8 @@ class AjaxController extends CommonAjaxController
     {
         $username = $request->request->get('username');
         $password = $request->request->get('password');
-        $region = $request->request->get('region');
-        $url = $request->request->get('url');
+        $region   = $request->request->get('region');
+        $url      = $request->request->get('url');
 
         $dataArray = [
             'html'    => '',
@@ -38,24 +36,23 @@ class AjaxController extends CommonAjaxController
 
         try {
             $client = new SqsClient([
-                'region' => $region,
-                'version' => '2012-11-05',
+                'region'      => $region,
+                'version'     => '2012-11-05',
                 'credentials' => [
                     'key'    => $username,
                     'secret' => $password,
                 ],
             ]);
-            
+
             $result = $client->listQueues();
-            
+
             $dataArray['html'] = 'Connected Successfully, please make sure this user has enough priviliges to read and write from the queue';
         } catch (AwsException $e) {
             $dataArray['html'] = $e->getMessage();
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             $dataArray['html'] = $e->getMessage();
         }
-   
+
         return $this->sendJsonResponse($dataArray);
     }
 }

@@ -12,11 +12,11 @@
 namespace MauticPlugin\SteercampaignSqsBundle\Command;
 
 use Mautic\CoreBundle\Command\ModeratedCommand;
+use Mautic\PluginBundle\Helper\IntegrationHelper;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Mautic\PluginBundle\Helper\IntegrationHelper;
 
 /**
  * CLI command to process the e-mail queue.
@@ -58,14 +58,14 @@ EOT
         $skipClear  = $input->getOption('do-not-clear');
         $quiet      = $input->hasOption('quiet') ? $input->getOption('quiet') : false;
         $timeout    = $input->getOption('clear-timeout');
-     
+
         $container = $this->getContainer();
 
         /** @var \Mautic\CoreBundle\Factory\MauticFactory $factory */
-        $factory = $container->get('mautic.factory');
+        $factory           = $container->get('mautic.factory');
         $integrationHelper = $factory->getHelper('integration');
         $integrationObject = $integrationHelper->getIntegrationObject('Sqs');
-        $queueMode  = $integrationObject->getIntegrationSettings()->isPublished();
+        $queueMode         = $integrationObject->getIntegrationSettings()->isPublished();
 
         if ('sqs' != $queueMode) {
             $output->writeln('Mautic is not set to SQS email.');

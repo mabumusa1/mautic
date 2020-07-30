@@ -11,21 +11,20 @@
 
 namespace MauticPlugin\SteercampaignSqsBundle\Swiftmailer\Spool;
 
-use Mautic\EmailBundle\Swiftmailer\Transport\TokenTransportInterface;
-use Swift_Mime_SimpleMessage;
 use Aws\Sqs\SqsClient;
 use AwsAwsException\AwsException;
-use Psr\Log\LoggerInterface;
+use Mautic\EmailBundle\Swiftmailer\Transport\TokenTransportInterface;
 use Mautic\PluginBundle\Helper\IntegrationHelper;
 use MauticPlugin\SteercampaignSqsBundle\Integration\SqsIntegration;
 use Monolog\Logger;
+use Psr\Log\LoggerInterface;
+use Swift_Mime_SimpleMessage;
 
 /**
- * Class DelegatingSpoolSqs
-*/
+ * Class DelegatingSpoolSqs.
+ */
 class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
 {
-
     /**
      * @var bool
      */
@@ -36,34 +35,30 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
      */
     private $realTransport;
 
-
     /**
      * @var bool
      */
     private $messageSpooled = false;
 
     /**
-     * @var integer The minimum number of messages that may be fetched at one time
+     * @var int The minimum number of messages that may be fetched at one time
      */
     private $min_number_messages = 1;
-    
 
     /**
-     * @var integer The maximum number of messages that may be fetched at one time
+     * @var int The maximum number of messages that may be fetched at one time
      */
     private $max_number_messages = 1;
-    
 
     /**
      * @var int default value
      */
     private $long_polling_timeout = 10; //in seconds
-    
+
     /**
      * @var int default value
      */
     private $size = 1000; //in bytes
-
 
     /**
      * @var bool|SqsIntegration
@@ -75,68 +70,61 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
      */
     protected $logger;
 
-
     /**
-    * @var SqsClient
-    */
+     * @var SqsClient
+     */
     private $sqs;
 
     /**
-    * @var String
-    */
+     * @var string
+     */
     private $queueUrl;
-    
+
     /**
      * Constructor.
      *
-     * @param IntegrationHelper $integrationHelper
-     * @param Logger $logger
      * @param Swift_Transport $realTransport
-     *
      */
     public function __construct(
         IntegrationHelper $integrationHelper,
         Logger $logger,
         \Swift_Transport $realTransport
-    )
-    {
-
+    ) {
         $this->integration  = $integrationHelper->getIntegrationObject('Sqs');
         $this->logger       = $logger;
 
-        $this->sqsSpoolEnabled     = $this->integration->getIntegrationSettings()->isPublished();
+        $this->sqsSpoolEnabled      = $this->integration->getIntegrationSettings()->isPublished();
         $this->realTransport        = $realTransport;
 
-        $keys = $this->integration->getDecryptedApiKeys();
+        $keys           = $this->integration->getDecryptedApiKeys();
         $this->queueUrl = $keys['url'];
 
         try {
             $this->sqs = new SqsClient([
-                'region' => $keys['region'],
-                'version' => '2012-11-05',
+                'region'      => $keys['region'],
+                'version'     => '2012-11-05',
                 'credentials' => [
                     'key'    => $keys['username'],
                     'secret' => $keys['password'],
                 ],
             ]);
-            
-            $this->min_number_messages = $keys['min_number_messages'];
-            $this->max_number_messages = $keys['max_number_messages'];
+
+            $this->min_number_messages  = $keys['min_number_messages'];
+            $this->max_number_messages  = $keys['max_number_messages'];
             $this->long_polling_timeout = $keys['long_polling_timeout'];
-            $this->size = $keys['size'];
+            $this->size                 = $keys['size'];
         } catch (AwsException $e) {
             $this->logger->error('Error Connecting to SQS: '.$exception->getMessage());
         }
-
     }
-    
+
     /**
      * {@inheritdoc}
      */
     public function isStarted()
     {
         return true;
-    }    
+    }
 
     /**
      * {@inheritdoc}
@@ -146,12 +134,11 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
     }
 
     /**
-    * {@inheritdoc}
-    */
+     * {@inheritdoc}
+     */
     public function stop()
     {
     }
-
 
     public function delegateMessage(\Swift_Mime_SimpleMessage $message, &$failedRecipients = null): int
     {
@@ -170,7 +157,7 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
      *
      * @param Swift_Mime_Message $message The message to store
      *
-     * @return bool    Whether the operation has succeeded
+     * @return bool Whether the operation has succeeded
      */
     public function queueMessage(\Swift_Mime_SimpleMessage $message)
     {
@@ -182,13 +169,14 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
 
         try {
             $response = $this->sqs->sendMessage([
-                'QueueUrl' => $this->queueUrl,
-                'MessageBody' => $messageBody
+                'QueueUrl'    => $this->queueUrl,
+                'MessageBody' => $messageBody,
             ]);
             $this->messageSpooled = true;
         } catch (AwsException $e) {
             $this->messageSpooled = false;
         }
+
         return 1;
     }
 
@@ -210,17 +198,16 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
     /**
      * Sends messages using the given transport instance.
      *
-     * @param Swift_Transport $transport A transport instance
-     * @param string[] $failedRecipients An array of failures by-reference
+     * @param Swift_Transport $transport        A transport instance
+     * @param string[]        $failedRecipients An array of failures by-reference
      *
-     * @return int     The number of sent emails
+     * @return int The number of sent emails
      */
-
     public function flushQueue(\Swift_Transport $transport, &$failedRecipients = null)
-    {        
-        $failedRecipients = (array)$failedRecipients;
-        $count = 0;
-        $time = time();
+    {
+        $failedRecipients = (array) $failedRecipients;
+        $count            = 0;
+        $time             = time();
 
         $maxNumberOfMessages = max(
             min(
@@ -232,7 +219,7 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
 
         $options = [
             'MaxNumberOfMessages' => $maxNumberOfMessages,
-            'WaitTimeSeconds' => $this->long_polling_timeout
+            'WaitTimeSeconds'     => $this->long_polling_timeout,
         ];
 
         while (true) {
@@ -245,7 +232,7 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
             }
 
             $messages = $response->get('Messages');
-            if (!is_array($messages) || count($messages) == 0) {
+            if (!is_array($messages) || 0 == count($messages)) {
                 return $count;
             }
 
@@ -254,7 +241,7 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
                     $transport->start();
                 }
 
-                $message = unserialize(gzuncompress(base64_decode((string)$sqsMessage['Body'])));
+                $message = unserialize(gzuncompress(base64_decode((string) $sqsMessage['Body'])));
 
                 try {
                     $count += $transport->send($message, $failedRecipients);
@@ -262,7 +249,7 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
                     echo $e->getMessage();
                 }
 
-                $this->removeSqsMessage((string)$sqsMessage['ReceiptHandle']);
+                $this->removeSqsMessage((string) $sqsMessage['ReceiptHandle']);
 
                 if ($this->getMessageLimit() && ($count >= $this->getMessageLimit())) {
                     return $count;
@@ -274,7 +261,7 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
             }
         }
 
-        return $count;        
+        return $count;
     }
 
     /**
@@ -282,14 +269,14 @@ class DelegatingSpoolSqs extends \Swift_ConfigurableSpool
      *
      * @param string $receiptHandle
      *
-     * @return boolean True if the remove was successful; otherwise false
+     * @return bool True if the remove was successful; otherwise false
      */
-   protected function removeSqsMessage($receiptHandle)
+    protected function removeSqsMessage($receiptHandle)
     {
         try {
             $response = $this->sqs->deleteMessage([
-                'QueueUrl' => $this->queueUrl,
-                'ReceiptHandle' => $receiptHandle
+                'QueueUrl'      => $this->queueUrl,
+                'ReceiptHandle' => $receiptHandle,
             ]);
         } catch (AwsException $e) {
             return false;

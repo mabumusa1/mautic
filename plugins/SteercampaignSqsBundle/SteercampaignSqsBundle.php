@@ -14,6 +14,5 @@ namespace MauticPlugin\SteercampaignSqsBundle;
 use Mautic\PluginBundle\Bundle\PluginBundleBase;
 
 class SteercampaignSqsBundle extends PluginBundleBase
-{ 
-      
+{
 }

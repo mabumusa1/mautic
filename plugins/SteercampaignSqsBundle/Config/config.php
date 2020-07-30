@@ -14,26 +14,26 @@ return [
     'version'     => '1.0',
     'author'      => 'Mohammad Abu Musa <m.abumusa@gmail.com>',
     'description' => 'Saves all the emails that are queued for sending on SQS instead of saving them on the filesystem',
-    'services' => [
+    'services'    => [
         'others' => [
             'steercampaign.swiftmailer_sqs.delegator' => [
                 'class'     => MauticPlugin\SteercampaignSqsBundle\Swiftmailer\Spool\DelegatingSpoolSqs::class,
                 'arguments' => [
                     'mautic.helper.integration',
                     'monolog.logger.mautic',
-                    'swiftmailer.transport.real'
+                    'swiftmailer.transport.real',
                 ],
-                'serviceAlias' => 'mautic.spool.delegator'                
-            ],            
+                'serviceAlias' => 'mautic.spool.delegator',
+            ],
             'steercampaign.swiftmailer_sqs.spool' => [
                 'class'     => MauticPlugin\SteercampaignSqsBundle\Swiftmailer\Transport\SqsTransport::class,
                 'arguments' => [
                     'swiftmailer.mailer.default.transport.eventdispatcher',
                     'steercampaign.swiftmailer_sqs.delegator',
                 ],
-                'serviceAlias' => 'mautic.transport.spool'
-            ]
-        ],        
+                'serviceAlias' => 'mautic.transport.spool',
+            ],
+        ],
         'integrations' => [
             'mautic.integration.sqs' => [
                 'class'     => \MauticPlugin\SteercampaignSqsBundle\Integration\SqsIntegration::class,
@@ -55,7 +55,7 @@ return [
                     'mautic.plugin.model.integration_entity',
                     'mautic.lead.model.dnc',
                 ],
-            ]
-        ]    
-    ]
+            ],
+        ],
+    ],
 ];
