@@ -167,7 +167,6 @@ class AmazonApiTransportTest extends \PHPUnit\Framework\TestCase
 
     public function testAmazonSend()
     {
-        $this->amazonTransport->start();
         $sent = $this->amazonTransport->send($this->message);
         $this->assertEquals(1, $sent);
     }
