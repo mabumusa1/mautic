@@ -263,7 +263,6 @@ class AmazonApiTransport extends AbstractTokenArrayTransport implements \Swift_T
                     }
                 },
                 'rejected' => function (AwsException $reason, $iteratorId) use ($evt) {
-                    dd($reason);
                     $failedRecipients = [];
                     $this->triggerSendError($evt, $failedRecipients, $reason->getAwsErrorMessage());
                 },
